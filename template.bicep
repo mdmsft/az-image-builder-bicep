@@ -1,5 +1,6 @@
 param location string = resourceGroup().location
-param productName string = 'test'
+param timestamp string = utcNow()
+param productName string = 'contoso'
 param productVersion string = '1.0.0'
 param imageIdentifier string = 'Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest'
 param replicationRegions array = []
@@ -19,7 +20,7 @@ var imageSku = imageIdentifierComponents[2]
 var imageVersion = imageIdentifierComponents[3]
 
 resource imageTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
-  name: uniqueString(productName, productVersion, imageIdentifier)
+  name: '${productName}-${productVersion}-${uniqueString(timestamp)}'
   location: location
   identity: {
     type: 'UserAssigned'
@@ -66,3 +67,5 @@ resource imageTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14
     ]
   }
 }
+
+output cmd string = 'az image builder run -n ${imageTemplate.name} -g ${resourceGroup().name} --no-wait'

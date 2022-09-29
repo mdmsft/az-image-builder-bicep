@@ -6,7 +6,7 @@ param location string = deployment().location
 param region string = 'weu'
 param imageIdentifier string = 'Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest'
 param productName string = 'ubuntu-lts'
-param productVersion string = '2022.09.29'
+param productVersion string = '2022.09.30'
 param replicationRegions array = [
   'northeurope'
 ]
