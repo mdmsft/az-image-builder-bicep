@@ -1,15 +1,16 @@
-param resourceSuffix string
 param location string = resourceGroup().location
-param productName string
-param productVersion string
-param imageIdentifier string
-param replicationRegions array
+param productName string = 'test'
+param productVersion string = '1.0.0'
+param imageIdentifier string = 'Canonical:0001-com-ubuntu-server-jammy:22_04-lts-gen2:latest'
+param replicationRegions array = []
 param identityId string
-param buildTimeoutInMinutes int = 30
+param subnetId string
+param stagingResourceGroupId string
+param buildTimeoutInMinutes int = 60
 param vmSize string = 'Standard_D2_v5'
 param proxyVmSize string = 'Standard_D16_v5'
-param osDiskSizeGB int = 32
-param subnetId string
+param osDiskSizeGB int = 64
+param galleryId string
 
 var imageIdentifierComponents = split(imageIdentifier, ':')
 var imagePublisher = imageIdentifierComponents[0]
@@ -17,28 +18,8 @@ var imageOffer = imageIdentifierComponents[1]
 var imageSku = imageIdentifierComponents[2]
 var imageVersion = imageIdentifierComponents[3]
 
-resource gallery 'Microsoft.Compute/galleries@2022-01-03' = {
-  name: 'gal${replace(resourceSuffix, '-', '')}'
-  location: location
-
-  resource image 'images' = {
-    name: productName
-    location: location
-    properties: {
-      identifier: {
-        sku: imageSku
-        offer: imageOffer
-        publisher: imagePublisher
-      }
-      osState: 'Generalized'
-      hyperVGeneration: 'V2'
-      osType: 'Linux'
-    }
-  }
-}
-
 resource imageTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14' = {
-  name: 'aib-${resourceSuffix}-${productName}-${productVersion}'
+  name: uniqueString(productName, productVersion, imageIdentifier)
   location: location
   identity: {
     type: 'UserAssigned'
@@ -48,6 +29,7 @@ resource imageTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14
   }
   properties: {
     buildTimeoutInMinutes: buildTimeoutInMinutes
+    stagingResourceGroup: stagingResourceGroupId
     vmProfile: {
       vmSize: vmSize
       osDiskSizeGB: osDiskSizeGB
@@ -76,7 +58,7 @@ resource imageTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14
     distribute: [
       {
         type: 'SharedImage'
-        galleryImageId: '${gallery::image.id}/versions/${productVersion}'
+        galleryImageId: '${galleryId}/versions/${productVersion}'
         storageAccountType: 'Standard_LRS'
         runOutputName: productVersion
         replicationRegions: replicationRegions
@@ -84,5 +66,3 @@ resource imageTemplate 'Microsoft.VirtualMachineImages/imageTemplates@2022-02-14
     ]
   }
 }
-
-output name string = imageTemplate.name
